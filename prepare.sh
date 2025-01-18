@@ -13,8 +13,8 @@ php composer-setup.php --install-dir=/usr/local/bin --filename=composer
 rm composer-setup.php
 
 # โคลนโปรเจกต์และติดตั้ง dependencies
-git clone https://github.com/lanparty/dbench.git
-cd dbench/
+#git clone https://github.com/lanparty/dbench.git
+#cd dbench/
 composer install
 
 # คัดลอกไฟล์ .env และตั้งค่า key

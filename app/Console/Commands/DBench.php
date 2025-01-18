@@ -16,6 +16,7 @@ class DBench extends Command
 
     public function handle()
     {
+        $this->info('Database Type: ' . DB::getDriverName());
         return $this->runBenchmarks();
     }
 

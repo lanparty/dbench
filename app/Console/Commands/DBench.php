@@ -36,6 +36,7 @@ class DBench extends Command
 
         $this->truncateTables();
 
+        $this->info('Database Type: ' . DB::getDriverName());
         $this->info("\nBenchmark Results:");
         $this->info("Write/Read operations: {$writeReadTime} ms");
         $this->info("JOIN queries: {$joinTime} ms");

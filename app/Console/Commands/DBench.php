@@ -4,15 +4,21 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+
 use App\Models\DBench\User;
-use App\Models\DBench\Post;
-use App\Models\DBench\Category;
-use App\Models\DBench\Tag;
+use App\Services\SVBench;
 
 class DBench extends Command
 {
     protected $signature = 'db:bench {--iterations=100 : Number of iterations for each benchmark}';
     protected $description = 'Run database benchmark with dbench tables: CRUD, joins, aggregations, relationships, pagination';
+
+    protected $svBench;
+    public function __construct()
+    {
+        parent::__construct();
+        $this->svBench = new SVBench([$this, 'info']);
+    }
 
     public function handle()
     {
@@ -27,15 +33,23 @@ class DBench extends Command
         $iterations = (int) $this->option('iterations');
         $this->info("Running database benchmark with {$iterations} iterations...");
 
+        $start = microtime(true);
+
         $writeReadTime = $this->benchmarkWriteRead($iterations);
         $joinTime = $this->benchmarkJoins($iterations);
         $manyToManyTime = $this->benchmarkManyToMany($iterations);
         $relationshipTime = $this->benchmarkRelationships($iterations);
         $aggregationTime = $this->benchmarkAggregations($iterations);
         $paginationTime = $this->benchmarkPagination($iterations);
+        $encryptionTime = $this->svBench->benchmarkEncryption($iterations);
+        $jsonTime = $this->svBench->benchmarkJson($iterations);
+        $cacheTime = $this->svBench->benchmarkCache($iterations);
 
         $this->truncateTables();
 
+        $totalTime = round((microtime(true) - $start) * 1000, 2);
+
+        $this->info('---------------------------------');
         $this->info('Database Type: ' . DB::getDriverName());
         $this->info("\nBenchmark Results:");
         $this->info("Write/Read operations: {$writeReadTime} ms");
@@ -44,8 +58,18 @@ class DBench extends Command
         $this->info("Eloquent Relationships: {$relationshipTime} ms");
         $this->info("Aggregations: {$aggregationTime} ms");
         $this->info("Pagination: {$paginationTime} ms");
+        $this->info("Encryption/Decryption: {$encryptionTime} ms (" . $this->calculateOpsPerSec($iterations, $encryptionTime) . " ops/sec)");
+        $this->info("JSON operations: {$jsonTime} ms (" . $this->calculateOpsPerSec($iterations, $jsonTime) . " ops/sec)");
+        $this->info("Cache operations: {$cacheTime} ms (" . $this->calculateOpsPerSec($iterations, $cacheTime) . " ops/sec)");
+        $this->info('---------------------------------');
+        $this->info("Total runtime: {$totalTime} ms");
 
         return Command::SUCCESS;
+    }
+
+    protected function calculateOpsPerSec($iterations, $time)
+    {
+        return round($iterations / ($time / 1000), 2);
     }
 
     protected function benchmarkWriteRead($iterations)
